@@ -4,7 +4,8 @@ github_path: /mnt/course-repos/_github
 
 course_patterns:
   angular: ["angular", "Angular"]
-  web_api: ["web-api", "webapi", "WebApi", "TrainingSolution", "TrainingApiSolution"]
+  web_api:
+    ["web-api", "webapi", "WebApi", "TrainingSolution", "TrainingApiSolution"]
   typescript: ["typescript", "ts-starter", "ts-prep"]
   intro: ["intro", "Intro", "beginning-service"]
   reference: ["prep", "reference", "notes", "teacher", "demo", "starter"]
@@ -33,3 +34,4 @@ source_type_overrides:
   site-typescript: course_guide
   stellar: personal_research
   msw-lens: personal_research
+  course-index: personal_research
