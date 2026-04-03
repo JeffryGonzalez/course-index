@@ -1,0 +1,35 @@
+nas_path: /mnt/course-repos
+
+github_path: /mnt/course-repos/_github
+
+course_patterns:
+  angular: ["angular", "Angular"]
+  web_api: ["web-api", "webapi", "WebApi", "TrainingSolution", "TrainingApiSolution"]
+  typescript: ["typescript", "ts-starter", "ts-prep"]
+  intro: ["intro", "Intro", "beginning-service"]
+  reference: ["prep", "reference", "notes", "teacher", "demo", "starter"]
+
+exclude_repos:
+  - "#recycle"
+  - "WednesdayStringCalculatorDeleteMe"
+  - "ThursdayStringCalculator"
+  - "BreakTimer"
+  - "todos-go"
+  - "frontend-may-2022"
+  - "somestuff"
+  - "class-time"
+  - "wednesday-teacher"
+
+source_type_overrides:
+  teaching-reference: reference_repo
+  developer-notes: reference_repo
+  dev-notes-july: reference_repo
+  BffApiThing: reference_repo
+  KafkaDotNetConventions: reference_repo
+  martenesque: reference_repo
+  jeffrygonzalez-dev-blog: personal_research
+  site-applied-angular: course_guide
+  site-web-api: course_guide
+  site-typescript: course_guide
+  stellar: personal_research
+  msw-lens: personal_research
