@@ -331,23 +331,32 @@ def ingest_repo(repo_slug, repo_path, config, conn):
     print(f"  New: {new_files} | Updated: {updated_files} | Skipped: {skipped_files} | Chunks: {total_chunks}")
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--path", help="Ingest a single local directory instead of scanning the NAS")
+    parser.add_argument("--slug", help="Slug name for the repo (defaults to directory name)")
+    args = parser.parse_args()
+
     with open(CONFIG_PATH) as f:
         config = yaml.safe_load(f)
 
-    exclude = set(config.get("exclude_repos", []))
-    nas_path = Path(config["nas_path"])
-
     conn = get_connection()
 
-    repo_dirs = [d for d in nas_path.iterdir()
-                 if d.is_dir() and d.name not in exclude and not d.name.startswith(".")]
+    if args.path:
+        repo_path = Path(args.path).resolve()
+        slug = args.slug or repo_path.name
+        ingest_repo(slug, repo_path, config, conn)
+    else:
+        exclude = set(config.get("exclude_repos", []))
+        nas_path = Path(config["nas_path"])
 
-    repo_dirs.sort(key=lambda d: d.name)
+        repo_dirs = [d for d in nas_path.iterdir()
+                     if d.is_dir() and d.name not in exclude and not d.name.startswith(".")]
+        repo_dirs.sort(key=lambda d: d.name)
 
-    print(f"Found {len(repo_dirs)} repos to process")
-
-    for repo_dir in repo_dirs:
-        ingest_repo(repo_dir.name, repo_dir, config, conn)
+        print(f"Found {len(repo_dirs)} repos to process")
+        for repo_dir in repo_dirs:
+            ingest_repo(repo_dir.name, repo_dir, config, conn)
 
     conn.close()
     print(f"\nIngest complete.")
