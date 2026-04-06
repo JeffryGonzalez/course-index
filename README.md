@@ -76,6 +76,8 @@ MCP Server (mcp_server.py)
 
 ## Running the MCP Server
 
+### Local (this machine)
+
 Registered globally in Claude Code via:
 
 ```bash
@@ -84,6 +86,38 @@ claude mcp add --scope user --transport stdio course-index \
 ```
 
 The server starts automatically when Claude Code needs it.
+
+### Network (other Tailscale machines)
+
+Start the HTTP/SSE server on this machine:
+
+```bash
+./start_mcp_network.sh
+# Listening on http://0.0.0.0:8080/sse
+```
+
+On the remote machine, add the MCP server to Claude Code:
+
+```bash
+claude mcp add --scope user --transport sse course-index \
+  http://<this-machines-tailscale-ip>:8080/sse
+```
+
+Or add it manually to `~/.claude/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "course-index": {
+      "type": "url",
+      "url": "http://<this-machines-tailscale-ip>:8080/sse"
+    }
+  }
+}
+```
+
+`start_mcp_network.sh` is not persistent across reboots — run it in a terminal
+or set up a systemd service if you want it always-on.
 
 ## Re-ingesting
 
@@ -96,22 +130,12 @@ export $(cat .env | xargs)
 python3 -u ingest.py
 ```
 
-To ingest a single repo:
+To ingest a single local directory (any directory, not just NAS repos):
 
 ```bash
-cd ~/course-index && python3 - << 'EOF'
-from pathlib import Path
-import yaml, sys
-sys.path.insert(0, '/home/jeff/course-index')
-import ingest, yaml
-
-with open(ingest.CONFIG_PATH) as f:
-    config = yaml.safe_load(f)
-
-conn = ingest.get_connection()
-ingest.ingest_repo("repo-name-here", Path("/mnt/course-repos/repo-name-here"), config, conn)
-conn.close()
-EOF
+cd ~/course-index && source .venv/bin/activate && export $(cat .env | xargs)
+python3 ingest.py --path /path/to/directory
+python3 ingest.py --path /path/to/directory --slug my-custom-slug
 ```
 
 ## Adding a New Course Repo
