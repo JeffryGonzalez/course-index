@@ -270,12 +270,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.port:
+        import contextlib
         from mcp.server.sse import SseServerTransport
+        from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
         from starlette.applications import Starlette
         from starlette.routing import Route, Mount
         from starlette.responses import Response
         import uvicorn
 
+        # --- Legacy SSE transport (kept for backward compatibility) ---
+        # Clients configured with --transport sse (e.g. Claude Code on remote machines)
+        # continue to use /sse + /messages/ unchanged.
         sse = SseServerTransport("/messages/")
 
         async def handle_sse(request):
@@ -283,12 +288,34 @@ if __name__ == "__main__":
                 await app.run(streams[0], streams[1], app.create_initialization_options())
             return Response()
 
-        starlette_app = Starlette(routes=[
-            Route("/sse", endpoint=handle_sse),
-            Mount("/messages/", app=sse.handle_post_message),
-        ])
+        # --- StreamableHTTP transport (modern clients, e.g. Hermes) ---
+        # Clients configured with --transport streamable-http use /mcp.
+        # Uses stateless=True so each request gets a fresh MCP session — no
+        # persistent session state needed for this server.
+        session_manager = StreamableHTTPSessionManager(app=app, stateless=True)
 
-        print(f"MCP server listening on http://0.0.0.0:{args.port}/sse")
+        async def handle_streamable_http(scope, receive, send):
+            await session_manager.handle_request(scope, receive, send)
+
+        @contextlib.asynccontextmanager
+        async def lifespan(starlette_app):
+            async with session_manager.run():
+                yield
+
+        starlette_app = Starlette(
+            lifespan=lifespan,
+            routes=[
+                # Legacy SSE endpoints — clients using --transport sse keep working
+                Route("/sse", endpoint=handle_sse),
+                Mount("/messages/", app=sse.handle_post_message),
+                # StreamableHTTP endpoint — modern clients use this
+                Mount("/mcp", app=handle_streamable_http),
+            ],
+        )
+
+        print(f"MCP server listening on:")
+        print(f"  SSE (legacy):          http://0.0.0.0:{args.port}/sse")
+        print(f"  StreamableHTTP (new):  http://0.0.0.0:{args.port}/mcp")
         uvicorn.run(starlette_app, host="0.0.0.0", port=args.port)
     else:
         from mcp.server.stdio import stdio_server
